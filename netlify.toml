@@ -6,90 +6,28 @@
 [functions]
   node_bundle = true
   external_node_modules = ["xendit-node"]
-  included_files = ["./netlify/functions/**"]
 
 [build.environment]
   NODE_VERSION = "18"
   NPM_FLAGS = "--production=false"
-  AWS_LAMBDA_JS_RUNTIME = "nodejs18.x"
-
-# Environment variables untuk development (optional)
-[build.environment]
-  # NODE_ENV = "production"
-
-# Context specific settings (optional)
-[context.production]
-  command = "echo 'Production build'"
-
-[context.deploy-preview]
-  command = "echo 'Deploy preview build'"
-
-[context.branch-deploy]
-  command = "echo 'Branch deploy build'"
 
 # Redirect configurations
-[[redirects]]
-  from = "/"
-  to = "/index.html"
-  status = 200
-
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Headers for security and CORS
+# Headers for security
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
 
+# CORS for functions
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-
-# CORS handling for functions
-[[headers]]
-  for = "/.netlify/functions/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-
-# Optional: Function-specific configurations
-[functions.create-static-qr]
-  timeout = 10
-
-[functions.xendit-webhook]
-  timeout = 30
-
-[functions.check-payment]
-  timeout = 5
-
-# Edge functions configuration (optional)
-# [[edge_functions]]
-#   path = "/api/*"
-#   function = "edge-function"
-
-# Plugin configurations (optional)
-# [[plugins]]
-#   package = "@netlify/plugin-sitemap"
-
-# Dev configuration (optional)
-[dev]
-  command = "echo 'No dev server needed'"
-  port = 8888
-  publish = "."
-
-# Import maps for dependencies (optional)
-# [functions]
-#   node_bundle = true
-#   import_map = "import_map.json"
-
-# Function directory watcher (optional)
-[dev.functions]
-  source = "netlify/functions"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
