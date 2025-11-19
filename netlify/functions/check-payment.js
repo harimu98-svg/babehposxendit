@@ -6,6 +6,10 @@ exports.handler = async (event) => {
   if (!external_id) {
     return {
       statusCode: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ success: false, error: 'external_id required' })
     };
   }
@@ -14,6 +18,10 @@ exports.handler = async (event) => {
 
   return {
     statusCode: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({
       success: true,
       data: payment

@@ -1,8 +1,7 @@
 const payments = new Map();
 
 exports.handler = async (event) => {
-  console.log('Webhook Received - Headers:', event.headers);
-  console.log('Webhook Body:', event.body);
+  console.log('Webhook Received:', event.body);
 
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -10,7 +9,7 @@ exports.handler = async (event) => {
 
   try {
     const webhookData = JSON.parse(event.body);
-    console.log('✅ Webhook Data:', JSON.stringify(webhookData, null, 2));
+    console.log('✅ Webhook Data:', webhookData);
 
     const { external_id, status, amount } = webhookData;
 

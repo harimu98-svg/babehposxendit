@@ -2,13 +2,6 @@
   publish = "."
   functions = "netlify/functions"
 
-[functions]
-  included_files = [
-    "netlify/functions/*.js",
-    "package.json",
-    "package-lock.json"
-  ]
-
 [[redirects]]
   from = "/*"
   to = "/index.html"
