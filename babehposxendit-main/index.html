@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRIS Static Xendit</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px; 
+        }
+        .container { 
+            max-width: 500px; margin: 0 auto; background: white; 
+            border-radius: 15px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 { text-align: center; color: #333; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; }
+        input, button { 
+            width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; 
+            font-size: 16px; 
+        }
+        input:focus { border-color: #667eea; outline: none; }
+        button { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; border: none; cursor: pointer; font-weight: 600; 
+            transition: transform 0.2s; 
+        }
+        button:hover { transform: translateY(-2px); }
+        button:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .qr-container { 
+            text-align: center; margin: 20px 0; padding: 20px; 
+            border: 2px dashed #ddd; border-radius: 10px; display: none; 
+        }
+        .qr-code { max-width: 250px; margin: 0 auto 15px; }
+        .status-container { 
+            margin: 20px 0; padding: 15px; border-radius: 8px; 
+            text-align: center; display: none; 
+        }
+        .status-pending { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .status-success { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .status-failed { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .amount-display { font-size: 24px; font-weight: bold; color: #2d3748; margin: 10px 0; }
+        .external-id { 
+            font-family: monospace; background: #f7fafc; padding: 5px 10px; 
+            border-radius: 4px; font-size: 14px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 QRIS Static Xendit</h1>
+        <p class="subtitle">Test Mode - Tidak Perlu IP Static</p>
+        
+        <div class="form-group">
+            <label for="amount">Amount (IDR):</label>
+            <input type="number" id="amount" placeholder="Masukkan amount" value="10000">
+        </div>
+        
+        <div class="form-group">
+            <label for="customerName">Nama Customer:</label>
+            <input type="text" id="customerName" placeholder="Nama customer" value="Test Customer">
+        </div>
+        
+        <button onclick="createQRCode()" id="createBtn">Buat QR Code</button>
+        
+        <div id="qrContainer" class="qr-container">
+            <div class="amount-display" id="amountDisplay"></div>
+            <div id="qrcode" class="qr-code"></div>
+            <div class="external-id" id="externalId"></div>
+            <p>Scan QR di atas dengan aplikasi e-wallet Anda</p>
+            <p><small>Customer akan input amount sendiri di app</small></p>
+        </div>
+        
+        <div id="statusContainer" class="status-container">
+            <h3 id="statusTitle">Status Pembayaran</h3>
+            <p id="statusMessage">Menunggu pembayaran...</p>
+            <div id="paymentDetails"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        let currentExternalId = '';
+        let checkInterval = null;
+
+        async function createQRCode() {
+            const amount = document.getElementById('amount').value;
+            const customerName = document.getElementById('customerName').value;
+            const createBtn = document.getElementById('createBtn');
+            
+            if (!amount || amount < 1000) {
+                alert('Amount minimal 1000 IDR');
+                return;
+            }
+
+            createBtn.disabled = true;
+            createBtn.textContent = 'Membuat QR Code...';
+
+            try {
+                const response = await fetch('/.netlify/functions/create-static-qr', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: parseInt(amount),
+                        customerName: customerName
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentExternalId = data.data.external_id;
+                    
+                    document.getElementById('amountDisplay').textContent = `Amount: Rp ${parseInt(amount).toLocaleString()}`;
+                    document.getElementById('externalId').textContent = `ID: ${currentExternalId}`;
+                    
+                    QRCode.toCanvas(document.getElementById('qrcode'), data.data.qr_string, {
+                        width: 250, margin: 2
+                    });
+                    
+                    document.getElementById('qrContainer').style.display = 'block';
+                    showStatus('pending', 'Scan QR Code untuk melakukan pembayaran');
+                    startPaymentChecking();
+                } else {
+                    throw new Error(data.error || 'Gagal membuat QR code');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                createBtn.disabled = false;
+                createBtn.textContent = 'Buat QR Code';
+            }
+        }
+
+        function showStatus(status, message) {
+            const container = document.getElementById('statusContainer');
+            const title = document.getElementById('statusTitle');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            container.className = 'status-container';
+            container.style.display = 'block';
+            
+            switch(status) {
+                case 'pending':
+                    container.classList.add('status-pending');
+                    title.textContent = '⏳ Menunggu Pembayaran';
+                    break;
+                case 'success':
+                    container.classList.add('status-success');
+                    title.textContent = '✅ Pembayaran Berhasil';
+                    break;
+                case 'failed':
+                    container.classList.add('status-failed');
+                    title.textContent = '❌ Pembayaran Gagal';
+                    break;
+            }
+            
+            statusMessage.textContent = message;
+        }
+
+        function startPaymentChecking() {
+            if (checkInterval) clearInterval(checkInterval);
+            
+            checkInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/.netlify/functions/check-payment?external_id=${currentExternalId}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.data.status !== 'PENDING') {
+                        clearInterval(checkInterval);
+                        
+                        if (data.data.status === 'COMPLETED') {
+                            showStatus('success', `Pembayaran ${data.data.amount ? 'Rp ' + data.data.amount.toLocaleString() : ''} berhasil!`);
+                        } else {
+                            showStatus('failed', 'Pembayaran gagal atau expired');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking payment:', error);
+                }
+            }, 3000);
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (checkInterval) clearInterval(checkInterval);
+        });
+    </script>
+</body>
+</html>
