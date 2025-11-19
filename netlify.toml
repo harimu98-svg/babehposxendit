@@ -1,33 +1,15 @@
 [build]
   publish = "."
   functions = "netlify/functions"
-  command = "echo 'No build process needed'"
 
 [functions]
-  node_bundle = true
-  external_node_modules = ["xendit-node"]
+  included_files = [
+    "netlify/functions/*.js",
+    "package.json",
+    "package-lock.json"
+  ]
 
-[build.environment]
-  NODE_VERSION = "18"
-  NPM_FLAGS = "--production=false"
-
-# Redirect configurations
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Headers for security
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-
-# CORS for functions
-[[headers]]
-  for = "/.netlify/functions/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
