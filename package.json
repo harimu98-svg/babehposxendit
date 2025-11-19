@@ -1,7 +1,15 @@
 {
   "name": "netlify-xendit-qris",
   "version": "1.0.0",
+  "description": "QRIS Static dengan Xendit",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'No build process'"
+  },
   "dependencies": {
     "xendit-node": "^3.13.0"
-  }
+  },
+  "keywords": ["qris", "xendit", "netlify"],
+  "author": "Your Name",
+  "license": "MIT"
 }
